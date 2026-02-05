@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="./static/img/flag.png">
+    <link rel="icon" type="image/png" href="../static/img/flag.png">
     <style>
         /* .citation-text {
             padding-bottom: 0%;
@@ -70,7 +70,6 @@
 
     </style>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script defer src="./index.js"></script>
     <script>
         window.MathJax = {
             tex: {
@@ -154,7 +153,7 @@
             This can be thought of as one "pixel" of the gradient \( \frac{\partial L}{\partial \Theta} \). An interesting interpretation of Equation \( \ref{eq:dLdTheta} \) is that <b>the gradient \( \frac{\partial L}{\partial \Theta} \) is a cross-correlation between \( \frac{\partial L}{\partial Y} \) and the input \( X \)</b>. Actually, it is technically a cross-correlation using a padded version of \( X \) such that the output size is \( K \times K \).
 
             <div class="figure">
-                <img src="./static/conv-backprop/dLdTheta.gif" style="max-width: 200px;">
+                <img src="../static/conv-backprop/dLdTheta.gif" style="max-width: 200px;">
                 <p class="caption">Figure 1: Visualization of \( \frac{\partial L}{\partial \Theta} \) computation. </p>
             </div>
         </p>
