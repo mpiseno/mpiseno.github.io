@@ -3,28 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="../static/img/flag.png">
+    <link rel="icon" type="image/svg+xml" href="../static/img/coat.svg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* .citation-text {
-            padding-bottom: 0%;
-            margin: 0%;
-        }
-        .citation {
-            padding-bottom: 10px;
-            width: 90%;
-        } */
-
         :root {
-            /* Background matches the warm off-white in the screenshot */
-            --bg: #f7f7f5;
+            --bg: #ffffff;
             --text: #111;
-            --muted: #444;
             --link: #000;
         }
 
         html, body {
-            margin: 0;
-            padding: 0;
             background: var(--bg);
             color: var(--text);
             font-family:
@@ -40,40 +28,28 @@
             line-height: 1.6;
         }
 
-        /* Page container */
-        .page {
-            max-width: 800px;
-
-            /* Centered, but nudged left */
-            margin: 80px auto;
-            transform: translateX(-40px);
-
-            padding: 0 24px;
-        }
-
         h1 {
             font-size: 20px;
             font-weight: 400;
-            margin: 0 0 16px 0;
         }
 
         h2 {
             font-size: 16px;
             font-weight: 500;
-            margin: 32px 0 16px 0;
         }
 
         .intro {
             white-space: pre-line;
-            margin-bottom: 28px;
         }
 
         .figure {
             text-align: center;
-            margin-top: 32px;
-            margin-bottom: 32px;
         }
 
+        .py-6 {
+            padding-top: 5rem !important;
+            padding-bottom: 5rem !important;
+        }
     </style>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>
@@ -85,134 +61,142 @@
     </script>
 </head>
 <body>
-    <main class="page">
-        <h1>Notes on Backpropagation in Convolutional Layers</h1>
-        <div class="intro">
-            29 December 2020
-            Revised 11 November 2023
+    <div class="container-fluid py-6">
+        <div class="row justify-content-center">
+            <div class="col-11 col-md-7 col-lg-5 col-xl-4">
+                <div class="content-wrapper">
+                    <h1 class="mb-3">Notes on Backpropagation in Convolutional Layers</h1>
+                    <div class="intro mb-4">
+                        29 December 2020
+                        Revised 11 November 2023
+                    </div>
+                    <hr class="mb-4"/>
+                    <p align="justify">
+                        This set of notes will discuss backpropagation in convolutional layers. We will derive the gradient of the loss with respect to the weights (kernel) and the input and discuss some interesting interpretations of these graidents. These notes were originially used for CS 7643: Deep Learning at Georgia Tech.
+                    </p>
+
+                    <!-- First we will formalize some notation. We assume that the layer has input $$\mathbf{X} \in \mathbb{R}^{N_{1} \times N_{2}}$$, a kernel $$\mathbf{w} \in \mathbb{R}^{k_{1} \times k_{2}}$$, and output $$\mathbf{y} \in \mathbb{R}^{N_{1} \times N_{2}}$$ (i.e. assume that we have sufficient padding to make the output the same dimension as the input). We also assume that the stride is 1. For simplcity, we are not including the channel dimension in the input or kernel (i.e. $$c = 1$$). Finally, $$\mathbf{X}$$ and $$\mathbf{y}$$ will be indexed by $$(r, c)$$ and $$\mathbf{w}$$ will be indexed by $$(a, b)$$. -->
+
+                    <h2 class="mt-4 mb-3">Preliminaries</h2>
+                    <p align="justify">
+                        First we will define some notation. We denote the input to the convolutional layer \( X \in \mathbb{R}^{H \times W} \), the output \( Y \in \mathbb{R}^{H' \times W'} \), and the parameters (i.e. the kernel) \( \Theta \in \mathbb{R}^{K \times K} \). For simplicity, we are assume there is no padding in the input, the kernel is square, and there is no channel dimension (i.e. there is one channel). We denote the scalar loss as \( L \).
+                    </p>
+                    <p align="justify">
+                        We also use the notation of differentials and gradients interchangeably. For example, \( \nabla_{\Theta} L = \frac{\partial L}{\partial \Theta} \in \mathbb{R}^{K^2} \) is a vector of partial derivatives the same size as the flattened \( \Theta \).
+                    </p>
+                    <p align="justify">
+                        Recall that in a convolutional layer, each feature in \( Y \) is computed as a cross-correlation of some region of \( X \) with \( \Theta \).
+
+                        <div class="equation">
+                            \[
+                            \begin{equation}\label{eq:forward}
+                                y_{h',w'} = \sum_{i=0}^{K-1} \sum_{j=0}^{K-1} x_{h'+i,w'+j} \theta_{i, j}
+                            \end{equation}
+                            \]
+                        </div>
+                    </p>
+                    <p align="justify">
+                        Also recall the basic API for the backward pass. We are given the upstream gradients from the next layer of the computation graph \( \nabla_{Y} L \) and return the gradients with respect to the parameters \( \nabla_{\Theta} L \) (used for gradient descent) and the with respect to the input \( \nabla_{X} L \) (used for continuing the backward pass).
+                    </p>
+
+                    <h2 class="mt-4 mb-3">Computing \( \nabla_{\Theta} L \)</h2>
+                    <p align="justify">
+                        We will now derive \( \nabla_{\Theta} L = \frac{\partial L}{\partial \Theta} \in \mathbb{R}^{K^2} \). Consider computing the gradient one entry at a time by considering the scalar \( \frac{\partial L}{\partial \theta_{i,j}} \). Logically we know that the parameter \( \theta_{i,j} \) contributes to every feature in the output, so we much incorporate the derivative of each of these features in our computation of \( \frac{\partial L}{\partial \theta_{i,j}} \). Using the chain rule we have:
+
+                        <div class="equation">
+                            \[
+                            \begin{align*}
+                                \frac{\partial L}{\partial \theta_{i,j}} &= \frac{\partial L}{\partial Y}\frac{\partial Y}{\partial \theta_{i,j}} \\
+                                &= \sum_{h'=0}^{H'-1} \sum_{w'=0}^{W'-1} \frac{\partial L}{\partial y_{h',w'}}\frac{\partial y_{h',w'}}{\partial \theta_{i,j}}
+                            \end{align*}
+                            \]
+                        </div>
+                    </p>
+                    <p align="justify">
+                        We already have \( \frac{\partial L}{\partial y_{h',w'}} \) from the upstream gradient. To compute \( \frac{\partial y_{h',w'}}{\partial \theta_{i,j}} \), we can use Equation \( \ref{eq:forward} \).
+
+                        <div class="equation">
+                            \[
+                            \begin{align*}
+                                \frac{\partial}{\partial \theta_{i,j}} y_{h',w'} &= \frac{\partial}{\partial \theta_{i,j}} \sum_{i'=0}^{K-1} \sum_{j'=0}^{K-1} x_{h'+i',w'+j'} \theta_{i', j'} \\
+                                &= x_{h'+i,w'+j}
+                            \end{align*}
+                            \]
+                        </div>
+                    </p>
+                    <p align="justify">
+                        This make sense because in the computation of \( y_{h',w'} \), \( \theta_{i,j} \) is only used once when it is multiplied by \( x_{h'+i,w'+j} \). So for each parameter \( \theta_{i,j} \) we have:
+
+                        <div class="equation">
+                            \[
+                            \begin{equation}\label{eq:dLdTheta}
+                                \frac{\partial L}{\partial \theta_{i,j}} = \sum_{h'=0}^{H'-1} \sum_{w'=0}^{W'-1} \frac{\partial L}{\partial y_{h',w'}} x_{h'+i,w'+j}
+                            \end{equation}
+                            \]
+                        </div>
+
+                        This can be thought of as one "pixel" of the gradient \( \frac{\partial L}{\partial \Theta} \). An interesting interpretation of Equation \( \ref{eq:dLdTheta} \) is that <b>the gradient \( \frac{\partial L}{\partial \Theta} \) is a cross-correlation between \( \frac{\partial L}{\partial Y} \) and the input \( X \)</b>. Actually, it is technically a cross-correlation using a padded version of \( X \) such that the output size is \( K \times K \).
+
+                        <div class="my-4">
+                            <img src="../static/conv-backprop/dLdTheta.gif" style="max-width: 200px; display: block; margin: 0 auto;">
+                            <p class="caption mt-2 text-center">Figure 1: Visualization of \( \frac{\partial L}{\partial \Theta} \) computation. </p>
+                        </div>
+                    </p>
+
+                    <h2 class="mt-4 mb-3">Computing \( \nabla_{X} L \)</h2>
+                    <p align="justify">
+                        Similarly, to compute \( \frac{\partial L}{\partial X} \in \mathbb{R}^{HW} \) we can consider one element \(\frac{\partial L}{\partial x_{h,w}}\) at a time and use the chain rule:
+
+                        <div class="equation">
+                            \[
+                            \begin{align*}
+                                \frac{\partial L}{\partial x_{h,w}} &= \sum_{h'=0}^{H'-1} \sum_{w'=0}^{W'-1} \frac{\partial L}{\partial y_{h',w'}}\frac{\partial y_{h',w'}}{\partial x_{h,w}}
+                            \end{align*}
+                            \]
+                        </div>
+
+                        Again, we have the upstream gradient \(\frac{\partial L}{\partial y_{h',w'}}\) and we can compute \(\frac{\partial y_{h',w'}}{\partial x_{h,w}}\) using Equation \( \ref{eq:forward} \).
+
+                        <div class="equation">
+                            \[
+                            \begin{align*}
+                                \frac{\partial}{\partial x_{h,w}} y_{h',w'} &= \frac{\partial}{\partial x_{h,w}} \sum_{i=0}^{K-1} \sum_{j=0}^{K-1} x_{h'+i,w'+j} \theta_{i, j} \\
+                                &= \theta_{h-h',w-w'}
+                            \end{align*}
+                            \]
+                        </div>
+
+                        where the last line follows from the fact that \( x_{h,w} \) only appears where \( i = h - h' \) and \( j = w - w' \). Now we have:
+
+                        <div class="equation">
+                            \[
+                            \begin{equation}\label{eq:dLdX}
+                                \frac{\partial L}{\partial x_{h,w}} = \sum_{h'=0}^{H'-1} \sum_{w'=0}^{W'-1} \frac{\partial L}{\partial y_{h',w'}} \theta_{h-h',w-w'}
+                            \end{equation}
+                            \]
+                        </div>
+
+                        <b>Remark:</b> Of course, when either index of \( \theta_{h-h',w-w'} \) is out of bounds of the kernel dimensions, we omit the term from the summation. This is equivalent to the case where the input pixel \( x_{h,w} \) is not used in the computation of the output \( y_{h',w'} \) because the kernel is not covering that region of the input. Therefore, the summation only includes up to \( K^2 \) valid terms.
+                    </p>
+                    <p align="justify">
+                        Using the above remark and the equations \( i = h - h', j = w - w' \), we can write Equation \( \ref{eq:dLdX} \) equivalently as
+
+                        <div class="equation">
+                            \[
+                            \begin{equation}
+                                \frac{\partial L}{\partial x_{h,w}} = \sum_{i=0}^{K-1} \sum_{j=0}^{K-1} \frac{\partial L}{\partial y_{h-i,w-j}} \theta_{i,j}
+                            \end{equation}
+                            \]
+                        </div>
+
+                        Interestingly, <b>the full gradient \( \frac{\partial L}{\partial X} \) can be thought of as a cross-correlation between a padded version of \( \frac{\partial L}{\partial Y} \) and the kernel \( \Theta \).</b>
+                    </p>
+
+                </div>
+            </div>
         </div>
-        <hr/>
-        <p align="justify">
-            This set of notes will discuss backpropagation in convolutional layers. We will derive the gradient of the loss with respect to the weights (kernel) and the input and discuss some interesting interpretations of these graidents. These notes were originially used for CS 7643: Deep Learning at Georgia Tech.
-        </p>
+    </div>
 
-        <!-- First we will formalize some notation. We assume that the layer has input $$\mathbf{X} \in \mathbb{R}^{N_{1} \times N_{2}}$$, a kernel $$\mathbf{w} \in \mathbb{R}^{k_{1} \times k_{2}}$$, and output $$\mathbf{y} \in \mathbb{R}^{N_{1} \times N_{2}}$$ (i.e. assume that we have sufficient padding to make the output the same dimension as the input). We also assume that the stride is 1. For simplcity, we are not including the channel dimension in the input or kernel (i.e. $$c = 1$$). Finally, $$\mathbf{X}$$ and $$\mathbf{y}$$ will be indexed by $$(r, c)$$ and $$\mathbf{w}$$ will be indexed by $$(a, b)$$. -->
-
-        <h2>Preliminaries</h2>
-        <p align="justify">
-            First we will define some notation. We denote the input to the convolutional layer \( X \in \mathbb{R}^{H \times W} \), the output \( Y \in \mathbb{R}^{H' \times W'} \), and the parameters (i.e. the kernel) \( \Theta \in \mathbb{R}^{K \times K} \). For simplicity, we are assume there is no padding in the input, the kernel is square, and there is no channel dimension (i.e. there is one channel). We denote the scalar loss as \( L \).
-        </p>
-        <p align="justify">
-            We also use the notation of differentials and gradients interchangeably. For example, \( \nabla_{\Theta} L = \frac{\partial L}{\partial \Theta} \in \mathbb{R}^{K^2} \) is a vector of partial derivatives the same size as the flattened \( \Theta \).
-        </p>
-        <p align="justify">
-            Recall that in a convolutional layer, each feature in \( Y \) is computed as a cross-correlation of some region of \( X \) with \( \Theta \).
-
-            <div class="equation">
-                \[ 
-                \begin{equation}\label{eq:forward}
-                    y_{h',w'} = \sum_{i=0}^{K-1} \sum_{j=0}^{K-1} x_{h'+i,w'+j} \theta_{i, j}
-                \end{equation}
-                \]
-            </div>
-        </p>
-        <p align="justify">
-            Also recall the basic API for the backward pass. We are given the upstream gradients from the next layer of the computation graph \( \nabla_{Y} L \) and return the gradients with respect to the parameters \( \nabla_{\Theta} L \) (used for gradient descent) and the with respect to the input \( \nabla_{X} L \) (used for continuing the backward pass).
-        </p>
-
-        <h2>Computing \( \nabla_{\Theta} L \)</h2>
-        <p align="justify">
-            We will now derive \( \nabla_{\Theta} L = \frac{\partial L}{\partial \Theta} \in \mathbb{R}^{K^2} \). Consider computing the gradient one entry at a time by considering the scalar \( \frac{\partial L}{\partial \theta_{i,j}} \). Logically we know that the parameter \( \theta_{i,j} \) contributes to every feature in the output, so we much incorporate the derivative of each of these features in our computation of \( \frac{\partial L}{\partial \theta_{i,j}} \). Using the chain rule we have:
-            
-            <div class="equation">
-                \[
-                \begin{align*}
-                    \frac{\partial L}{\partial \theta_{i,j}} &= \frac{\partial L}{\partial Y}\frac{\partial Y}{\partial \theta_{i,j}} \\
-                    &= \sum_{h'=0}^{H'-1} \sum_{w'=0}^{W'-1} \frac{\partial L}{\partial y_{h',w'}}\frac{\partial y_{h',w'}}{\partial \theta_{i,j}}
-                \end{align*}
-                \]
-            </div>
-        </p>
-        <p align="justify">
-            We already have \( \frac{\partial L}{\partial y_{h',w'}} \) from the upstream gradient. To compute \( \frac{\partial y_{h',w'}}{\partial \theta_{i,j}} \), we can use Equation \( \ref{eq:forward} \).
-
-            <div class="equation">
-                \[
-                \begin{align*}
-                    \frac{\partial}{\partial \theta_{i,j}} y_{h',w'} &= \frac{\partial}{\partial \theta_{i,j}} \sum_{i'=0}^{K-1} \sum_{j'=0}^{K-1} x_{h'+i',w'+j'} \theta_{i', j'} \\
-                    &= x_{h'+i,w'+j}
-                \end{align*}
-                \]
-            </div>
-        </p>
-        <p align="justify">
-            This make sense because in the computation of \( y_{h',w'} \), \( \theta_{i,j} \) is only used once when it is multiplied by \( x_{h'+i,w'+j} \). So for each parameter \( \theta_{i,j} \) we have:
-            
-            <div class="equation">
-                \[
-                \begin{equation}\label{eq:dLdTheta}
-                    \frac{\partial L}{\partial \theta_{i,j}} = \sum_{h'=0}^{H'-1} \sum_{w'=0}^{W'-1} \frac{\partial L}{\partial y_{h',w'}} x_{h'+i,w'+j}
-                \end{equation}
-                \]
-            </div>
-            
-            This can be thought of as one "pixel" of the gradient \( \frac{\partial L}{\partial \Theta} \). An interesting interpretation of Equation \( \ref{eq:dLdTheta} \) is that <b>the gradient \( \frac{\partial L}{\partial \Theta} \) is a cross-correlation between \( \frac{\partial L}{\partial Y} \) and the input \( X \)</b>. Actually, it is technically a cross-correlation using a padded version of \( X \) such that the output size is \( K \times K \).
-
-            <div class="figure">
-                <img src="../static/conv-backprop/dLdTheta.gif" style="max-width: 200px;">
-                <p class="caption">Figure 1: Visualization of \( \frac{\partial L}{\partial \Theta} \) computation. </p>
-            </div>
-        </p>
-
-        <h2>Computing \( \nabla_{X} L \)</h2>
-        <p align="justify">
-            Similarly, to compute \( \frac{\partial L}{\partial X} \in \mathbb{R}^{HW} \) we can consider one element \(\frac{\partial L}{\partial x_{h,w}}\) at a time and use the chain rule:
-
-            <div class="equation">
-                \[
-                \begin{align*}
-                    \frac{\partial L}{\partial x_{h,w}} &= \sum_{h'=0}^{H'-1} \sum_{w'=0}^{W'-1} \frac{\partial L}{\partial y_{h',w'}}\frac{\partial y_{h',w'}}{\partial x_{h,w}}
-                \end{align*}
-                \]
-            </div>
-
-            Again, we have the upstream gradient \(\frac{\partial L}{\partial y_{h',w'}}\) and we can compute \(\frac{\partial y_{h',w'}}{\partial x_{h,w}}\) using Equation \( \ref{eq:forward} \).
-
-            <div class="equation">
-                \[
-                \begin{align*}
-                    \frac{\partial}{\partial x_{h,w}} y_{h',w'} &= \frac{\partial}{\partial x_{h,w}} \sum_{i=0}^{K-1} \sum_{j=0}^{K-1} x_{h'+i,w'+j} \theta_{i, j} \\
-                    &= \theta_{h-h',w-w'}
-                \end{align*}
-                \]
-            </div>
-            
-            where the last line follows from the fact that \( x_{h,w} \) only appears where \( i = h - h' \) and \( j = w - w' \). Now we have:
-
-            <div class="equation">
-                \[
-                \begin{equation}\label{eq:dLdX}
-                    \frac{\partial L}{\partial x_{h,w}} = \sum_{h'=0}^{H'-1} \sum_{w'=0}^{W'-1} \frac{\partial L}{\partial y_{h',w'}} \theta_{h-h',w-w'}
-                \end{equation}
-                \]
-            </div>
-
-            <b>Remark:</b> Of course, when either index of \( \theta_{h-h',w-w'} \) is out of bounds of the kernel dimensions, we omit the term from the summation. This is equivalent to the case where the input pixel \( x_{h,w} \) is not used in the computation of the output \( y_{h',w'} \) because the kernel is not covering that region of the input. Therefore, the summation only includes up to \( K^2 \) valid terms.
-        </p>
-        <p align="justify">
-            Using the above remark and the equations \( i = h - h', j = w - w' \), we can write Equation \( \ref{eq:dLdX} \) equivalently as
-
-            <div class="equation">
-                \[
-                \begin{equation}
-                    \frac{\partial L}{\partial x_{h,w}} = \sum_{i=0}^{K-1} \sum_{j=0}^{K-1} \frac{\partial L}{\partial y_{h-i,w-j}} \theta_{i,j}
-                \end{equation}
-                \]
-            </div>
-
-            Interestingly, <b>the full gradient \( \frac{\partial L}{\partial X} \) can be thought of as a cross-correlation between a padded version of \( \frac{\partial L}{\partial Y} \) and the kernel \( \Theta \).</b>
-        </p>
-
-    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

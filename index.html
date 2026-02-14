@@ -3,28 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="./static/img/flag.png">
+    <link rel="icon" type="image/svg+xml" href="./static/img/coat.svg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        /* .citation-text {
-            padding-bottom: 0%;
-            margin: 0%;
-        }
-        .citation {
-            padding-bottom: 10px;
-            width: 90%;
-        } */
-
         :root {
-            /* Background matches the warm off-white in the screenshot */
-            --bg: #f7f7f5;
+            --bg: #ffffff;
             --text: #111;
-            --muted: #444;
             --link: #000;
         }
 
         html, body {
-            margin: 0;
-            padding: 0;
             background: var(--bg);
             color: var(--text);
             font-family:
@@ -40,42 +28,23 @@
             line-height: 1.6;
         }
 
-        /* Page container */
-        .page {
-            max-width: 680px;
-
-            /* Centered, but nudged left */
-            margin: 80px auto;
-            transform: translateX(-40px);
-
-            padding: 0 24px;
-        }
-
         h1 {
-            font-size: 18px;
+            font-size: 20px;
             font-weight: 400;
-            margin: 0 0 36px 0;
         }
 
         h2 {
             font-size: 16px;
             font-weight: 500;
-            margin: 32px 0 16px 0;
         }
 
         .intro {
             white-space: pre-line;
-            margin-bottom: 28px;
-        }
-
-        .links {
-            margin-bottom: 48px;
         }
 
         .links a {
             color: var(--link);
             text-decoration: underline;
-            margin: 0 4px;
             text-decoration-thickness: 1px;
             text-underline-offset: 2px;
             opacity: 0.85;
@@ -85,31 +54,22 @@
             opacity: 1;
         }
 
-        .portrait {
-            width: 320px;
-        }
-
         .portrait img {
-            width: 100%;
-            display: block;
             filter: grayscale(100%);
         }
 
-        /* Inline reveal panel */
-        .bio-panel {
-            margin-top: 18px;
-            max-width: 62ch;
-        }
-
         .bio-panel p {
-            margin: 0 0 12px 0;
             text-align: justify;
             hyphens: auto;
         }
 
-        /* Slightly de-emphasize the panel without changing aesthetic */
         .bio-panel {
             opacity: 0.95;
+        }
+
+        .py-6 {
+            padding-top: 6rem !important;
+            padding-bottom: 6rem !important;
         }
     </style>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
@@ -117,45 +77,48 @@
 </head>
 
 <body>
-    <main class="page">
-    <h1>Michael Piseno</h1>
+    <div class="container-fluid py-6">
+        <div class="row justify-content-center">
+            <div class="col-11 col-md-6 col-lg-4 col-xl-4">
+                <div class="content-wrapper">
+                    <h1 class="mb-5">Michael Piseno</h1>
 
-    <div class="intro">
-        CS PhD student at Stanford.
-        Founder of the AI Policy Forum.
-        Working on robotics.
+                    <div class="intro mb-4">
+                        CS PhD student at Stanford.
+                        Founder of the AI Policy Forum.
+                        Working on robotics.
 
-        Advised by Karen Liu.
+                        Advised by Karen Liu.
+                    </div>
+
+                    <div class="links mb-5">
+                        <a href="./static/pdf/michael_piseno_cv.pdf" target="_blank">CV</a> |
+                        <a href="https://x.com/michaelpiseno_" target="_blank">twitter</a> |
+                        <a href="https://github.com/mpiseno" target="_blank">github</a> |
+                        <a href="#bio" id="bio-link">bio</a>
+                    </div>
+
+                    <section id="bio" class="bio-panel links" hidden>
+                        <h2 class="mt-4 mb-3">Bio</h2>
+                        <p class="mb-3">
+                            I am a PhD student in Computer Science at Stanford University advised by Karen Liu. Previously, I graduated summa cum laude from Georgia Tech with a BS in Computer Science and minors in Mathematics and Chinese Language. I have spent time in both research and engineering roles at DeepMind, IBM Research, Dropbox, Meta, and Amazon. I also founded and lead of the <a href="https://www.aipolicyforum.xyz" target="_blank">AI Policy Forum</a> at Stanford.
+                        </p>
+                        <p class="mb-3">
+                            My research focuses on robotics and AI. I work on whole-body human motion tracking and dexterous manipulation. I am also interested in human and object pose estimation from video. My research is supported by the <a href="https://en.wikipedia.org/wiki/DoD_NDSEG_Fellowship" target="_blank">National Defense Science and Engineering Graduate (NDSEG)</a> Fellowship.
+                        </p>
+                        <p class="mb-3">
+                            My work with the AI Policy Forum focuses on S&T policy that supports research and development of AI and robotics, with an emphasis on strengthening domestic industrial capacity through automation. Our organization is supported by the Stanford Institute for Human-Centered Artificial Intelligence (HAI).
+                        </p>
+
+                        <h2 class="mt-4 mb-3">Notes and Thoughts</h2>
+                        <a href="./pages/conv-backprop.html">Notes on Backpropagation in Convolutional Layers</a>
+                    </section>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <div class="links">
-        <a href="./static/pdf/michael_piseno_cv.pdf" target="_blank">CV</a> |
-        <a href="https://x.com/michaelpiseno_" target="_blank">twitter</a> |
-        <a href="https://github.com/mpiseno" target="_blank">github</a> |
-        <a href="#bio" id="bio-link">bio</a>
-    </div>
-
-    <section id="bio" class="bio-panel links" hidden>
-        <h2>Bio</h2>
-        <p>
-            I am a PhD student in Computer Science at Stanford University advised by Karen Liu. Previously, I graduated summa cum laude from Georgia Tech with a BS in Computer Science and minors in Mathematics and Chinese Language. I have spent time in both research and engineering roles at DeepMind, IBM Research, Dropbox, Meta, and Amazon. I also founded and lead of the <a href="https://www.aipolicyforum.xyz" target="_blank">AI Policy Forum</a> at Stanford.
-        </p>
-        <p>
-            My research focuses on robotics and AI. I work on whole-body human motion tracking and dexterous manipulation. I am also interested in human and object pose estimation from video. My research is supported by the <a href="https://en.wikipedia.org/wiki/DoD_NDSEG_Fellowship" target="_blank">National Defense Science and Engineering Graduate (NDSEG)</a> Fellowship.
-        </p>
-        <p>
-            My work with the AI Policy Forum focuses on S&T policy that supports research and development of AI and robotics, with an emphasis on strengthening domestic industrial capacity through automation. Our organization is supported by the Stanford Institute for Human-Centered Artificial Intelligence (HAI).
-        </p>
-
-        <h2>Notes and Thoughts</h2>
-        <a href="./pages/conv-backprop.html">Notes on Backpropagation in Convolutional Layers</a>
-    </section>
-
-    <!-- <div class="portrait">
-      <img src="portrait.jpg" alt="Portrait">
-    </div> -->
-
-    </main>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 
 
