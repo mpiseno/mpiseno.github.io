@@ -38,10 +38,6 @@
             font-weight: 500;
         }
 
-        .intro {
-            white-space: pre-line;
-        }
-
         .links a {
             color: var(--link);
             text-decoration: underline;
@@ -71,6 +67,11 @@
             padding-top: 6rem !important;
             padding-bottom: 6rem !important;
         }
+
+        /* One step above Bootstrap's mb-5 (3rem), which is its max. Tune this. */
+        .mb-6 {
+            margin-bottom: 4.5rem !important;
+        }
     </style>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script defer src="./index.js"></script>
@@ -81,21 +82,26 @@
         <div class="row justify-content-center">
             <div class="col-11 col-md-6 col-lg-4 col-xl-4">
                 <div class="content-wrapper">
-                    <h1 class="mb-5">Michael Piseno</h1>
+                    <h1 class="mb-6">Michael Piseno</h1>
 
                     <div class="intro mb-4">
-                        CS PhD student at Stanford.
-                        MTS Intern at Amazon Frontier AI & Robotics (FAR).
-                        Working on robotics.
-
+                        CS PhD student at Stanford.<br>
+                        MTS Intern at Amazon Frontier AI & Robotics (FAR).<br>
+                        Working on robotics.<br>
+                        <br>
                         Advised by Karen Liu.
                     </div>
 
-                    <div class="links mb-5">
+                    <div class="links mb-6">
                         <a href="./static/pdf/michael_piseno_cv.pdf" target="_blank">CV</a> |
                         <a href="https://x.com/michaelpiseno_" target="_blank">twitter</a> |
                         <a href="https://github.com/mpiseno" target="_blank">github</a> |
                         <a href="#bio" id="bio-link">bio</a>
+                    </div>
+
+                    <div class="links mb-6">
+                        <h2 class="mt-0 mb-3">Writing</h2>
+                        <a href="./pages/conv-backprop.html">Notes on Backpropagation in Convolutional Layers</a>
                     </div>
 
                     <section id="bio" class="bio-panel links" hidden>
@@ -109,9 +115,6 @@
                         <p class="mb-3">
                             My work with the AI Policy Forum focuses on S&T policy that supports research and development of AI and robotics, with an emphasis on strengthening domestic industrial capacity through automation. Our organization is supported by the Stanford Institute for Human-Centered Artificial Intelligence (HAI).
                         </p>
-
-                        <h2 class="mt-4 mb-3">Notes and Thoughts</h2>
-                        <a href="./pages/conv-backprop.html">Notes on Backpropagation in Convolutional Layers</a>
                     </section>
                 </div>
             </div>
