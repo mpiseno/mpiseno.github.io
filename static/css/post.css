@@ -1,0 +1,165 @@
+/* Shared styles for blog posts in pages/. */
+
+:root {
+    --bg: #ffffff;
+    --text: #111;
+    --link: #000;
+    --muted: #666;
+    --rule: #ddd;
+}
+
+html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family:
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        Monaco,
+        Consolas,
+        "Liberation Mono",
+        "Courier New",
+        monospace;
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+h1 {
+    font-size: 20px;
+    font-weight: 400;
+}
+
+h2 {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+/* Needs this specificity to beat Bootstrap's mt-* utilities. */
+.content-wrapper h2 {
+    margin-top: 2.5rem !important;
+}
+
+.intro {
+    white-space: pre-line;
+}
+
+.figure {
+    text-align: center;
+}
+
+.py-6 {
+    padding-top: 5rem !important;
+    padding-bottom: 5rem !important;
+}
+
+/* Figures */
+figure {
+    margin: 1.5rem 0;
+}
+figure img, figure video {
+    display: block;
+    width: 100%;
+    height: auto;
+    background: #000;
+}
+figcaption {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.45;
+    margin-top: 8px;
+}
+.figname {
+    font-weight: 500;
+    margin-bottom: 8px;
+}
+
+/* Segmented button group for switching a figure's content */
+.seg {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.seg button {
+    font: inherit;
+    font-size: 12px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--rule);
+    padding: 4px 8px;
+    cursor: pointer;
+}
+.seg button[aria-pressed="true"] {
+    background: var(--text);
+    color: var(--bg);
+    border-color: var(--text);
+}
+
+.legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+.legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.legend svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* SVG charts */
+.chart {
+    position: relative;
+    border: 1px solid var(--rule);
+}
+.chart svg { display: block; width: 100%; height: auto; }
+.chart text { font-size: 11.5px; fill: var(--muted); }
+.chart .axis-title { fill: var(--text); font-size: 12px; }
+.chart .grid { stroke: var(--rule); stroke-width: 1; }
+.chart .mark { stroke: #000; stroke-width: 0.8; opacity: 0.75; }
+.chart .mark.off { fill: none; stroke-width: 1.6; opacity: 1; }
+.chart .med { stroke: #e0201b; stroke-width: 2.5; }
+.tip {
+    position: absolute;
+    pointer-events: none;
+    background: var(--text);
+    color: var(--bg);
+    font-size: 12px;
+    line-height: 1.35;
+    padding: 5px 8px;
+    max-width: 220px;
+    z-index: 2;
+}
+
+/* Tables */
+.tablewrap {
+    overflow-x: auto;
+    margin-top: 10px;
+}
+table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 12.5px;
+}
+th, td {
+    text-align: right;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--rule);
+    white-space: nowrap;
+}
+th:first-child, td:first-child { text-align: left; }
+th { font-weight: 500; color: var(--muted); }
+
+/* Disclaimer (inserted by static/js/disclaimer.js) */
+.disclaimer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--rule);
+    font-size: 12.5px;
+    color: #888;
+}

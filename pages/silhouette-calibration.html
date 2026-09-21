@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calibrating a wrist camera from pre-recorded monocular RGB</title>
+    <link rel="icon" type="image/svg+xml" href="../static/img/coat.svg">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="../static/css/post.css" rel="stylesheet">
+    <style>
+        figure img#epext {
+            background: #fff;
+            border: 1px solid var(--rule);
+            margin-bottom: 6px;
+        }
+        .claude {
+            color: #1f5fd1;
+        }
+    </style>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>
+        window.MathJax = {
+            tex: {
+            tags: 'ams'
+            }
+        };
+    </script>
+</head>
+<body>
+    <div class="container-fluid py-6">
+        <div class="row justify-content-center">
+            <div class="col-11 col-md-7 col-lg-5 col-xl-4">
+                <div class="content-wrapper">
+                    <h1 class="mb-3">Calibrating a wrist camera from pre-recorded monocular RGB</h1>
+                    <div class="intro mb-4">
+                        20 September 2026
+                    </div>
+                    <hr class="mb-4"/>
+
+                    <h2 class="mt-4 mb-3">Large datasets are messy</h2>
+                    <p align="justify">
+                        Most robot datasets include monocular RGB wrist videos. Some datasets, such as <a href="https://droid-dataset.github.io/">DROID</a>, ship with camera extrinsics, which allow us to compute derived annotations such as 3D scene geometry or 2D masks. In <a href="https://tml.stanford.edu/cloak/">Cloak</a> for example, we used the wrist camera extrinsics to compute gripper masks for visual attention masking.
+                    </p>
+
+                    <p align="justify">
+                        The problem is real datasets get messy at scale. Different rigs have camera mounts attached slightly differently, cameras accidentally flipped upside down, or use different gripper models (all of these problems are present in the DROID data). These all contribute to inaccurate camera extrinsics, even in a very standardized rig like DROID.
+                    </p>
+
+                    <p align="justify">
+                        The standard fix is to recalibrate the cameras using hand-eye calibration. But this needs known point correspondences and access to the physical robot, which we don't have in a pre-recorded dataset. In Cloak, to calibrate wrist camera extrinsics in a pre-recorded monocular RGB video, we introduced a method we call Silhoutte Calibration; we render end-effector masks in sim and solve for the 6-dof camera extrinsics by regressing the mask on a pseudo-ground-truth target mask.
+                    </p>
+
+                    <h2 class="mt-4 mb-3">Silhoutte Calibration</h2>
+                    <p align="justify">
+                        We leverage the fact that the end-effector is roughly the same color and occupies approximately the same pixels in every wrist image. This allows us to compute a pseudo-ground-truth target mask composed of the "most constant" pixels across the trajectory.
+                    </p>
+
+                    <p align="justify">
+                        For each episode with wrist frames \( I_t \in \mathbb{R}^{H \times W \times 3} \) and joint positions \( q_t \), we want the pose of the camera in the end-effector frame, \( T_{ec} \in SE(3) \), which we parameterize as \( \theta \in \mathbb{R}^6 \) representing the 6-dof pose of the camera. We will solve the following optimization problem
+
+                        <div class="equation">
+                            \[
+                            \begin{equation}
+                                \theta^* = \underset{\theta}{\arg\min} \; 1 - \text{IoU}\left( M(\theta, q_{t_0}), \; M_{gt} \right) \label{eq:opt}
+                            \end{equation}
+                            \]
+                        </div>
+
+                        where \(  M(\theta, q_{t_0}) \) is the end-effector mask rendered as a function of the robot configuration and camera pose and \(  M_{gt} \) is the pseudo-ground-truth mask.
+                    </p>
+                    
+                    <p align="justify">
+                        We construct the pseudo-ground-truth mask in the following way. We take frames where the end-effector is in a known pose (e.g. gripper open), coverting the frames to grayscale, and cropping them to a region where the gripper is known to be (e.g. the bottom half of the image). 
+                        Call these frames \( I_t \) with pixel values \( I_{t, p} \) indexed by \( p \). In DROID the grippers are all the black Robotiq-2f85 gripper, so we want to find the most consistently dark pixels. To do this we compute the median intensity across time for each pixel and then another spatial median. Similarly, to find the most constant pixels in the episode (regardless of color) we compute the median of the temporal standard deviaton.
+
+                        <div class="equation">
+                            \[
+                            \begin{gather}
+                                s_{int} = \underset{p}{\text{median}} \left( \underset{t}{\text{median}} \; I_{t, p} \right) \\
+                                s_{std} = \underset{p}{\text{median}} \left( \underset{t}{\text{std}} \; I_{t, p} \right)
+                            \end{gather}
+                            \]
+                        </div>
+
+                        then the pseudo-ground-truth mask is computed as the intersection of intensity and standard deviation masks.
+
+                        <div class="equation">
+                            \[
+                            \begin{gather}
+                                M_{int} = \mathbb{1}[I_0 < s_{int}] \\
+                                M_{std} = \mathbb{1}[I_0 < s_{std}] \\
+                                M_{gt} = M_{int} \cap M_{std} \label{eq:mgt}
+                            \end{gather}
+                            \]
+                        </div>
+                    </p>
+
+                    <p align="justify">
+                        The pseudo-ground-truth is often noisy, and not suitable for direct use in Cloak, but is a sufficient target for optimizing \( \theta \). We solve Equation \( \ref{eq:opt} \) with  Nelder-Mead initialized at the median DROID camera extrinsic vector. Figure <a class="figref" href="#fig:sc"></a> shows qualitative results of Silhoutte Calibration on several episodes.
+                    </p>
+                    <figure id="fig:sc">
+                        <div class="figname">Pipeline strip</div>
+                        <img src="../static/silhouette-calibration/pipeline_draft.jpg" alt="Three rows of wrist frame, pseudo-GT mask, and calibrated outline" loading="lazy">
+                        <figcaption>Columns: initial wrist RGB, pseudo-ground-truth mask, mask contour after optimizing wrist camera extrinsics. Rows: episodes of varying pseudo-ground-truth mask quality. The pseudo-ground-truth mask is too noisy for direct use, but makes for a useful optimization target.</figcaption>
+                    </figure>
+
+                    <h2 class="claude mt-4 mb-3">3. DROID results</h2>
+                    <p class="claude" align="justify">
+                        DROID ships its own wrist extrinsics for each episode, obtained from hand-eye calibration. We compare those against ours on a fixed random subset of 200 episodes that spans the labs.
+                    </p>
+                    <figure id="fig:showcase">
+                        <div class="figname">Showcase episode</div>
+                        <div class="seg" id="epseg" role="group" aria-label="Showcase episode"></div>
+                        <div class="legend">
+                            <span><svg viewBox="0 0 12 12"><rect x="1" y="4.5" width="10" height="3" fill="#00dcff"/></svg>DROID's pose</span>
+                            <span><svg viewBox="0 0 12 12"><rect x="1" y="4.5" width="10" height="3" fill="#3ce65a"/></svg>ours</span>
+                        </div>
+                        <img id="epext" alt="Third-person render of the gripper with two camera glyphs, DROID's pose in cyan and ours in green">
+                        <video id="epvideo" controls muted loop playsinline preload="metadata"></video>
+                        <figcaption id="epcap"></figcaption>
+                    </figure>
+                    <p class="claude" align="justify">
+                        In the video, the green outline stays on the fingers through the whole motion, including the grasp, even though it was fit on a single frame with the gripper open. The cyan outline, rendered from DROID's pose, is visibly off.
+                    </p>
+                    <p class="claude" align="justify">
+                        For these three episodes the two poses differ by 25 to 37 mm and 2 to 3.5°. These are the largest differences among the grasping episodes in the subset, not typical ones.
+                    </p>
+                    <figure id="fig:spread">
+                        <div class="figname">Extrinsics spread</div>
+                        <div class="legend">
+                            <span><svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" fill="#2a78d6" stroke="#000" stroke-width="0.8"/></svg>DROID-provided</span>
+                            <span><svg viewBox="0 0 12 12"><circle cx="6" cy="6" r="4.5" fill="#1baf7a" stroke="#000" stroke-width="0.8"/></svg>ours</span>
+                            <span><svg viewBox="0 0 14 14" style="width:14px;height:14px"><circle cx="7" cy="7" r="5.5" fill="none" stroke="#e0201b" stroke-width="2.2"/></svg>set median</span>
+                        </div>
+                        <div class="chart" id="chart"></div>
+                        <figcaption id="chartcap"></figcaption>
+                        <div class="tablewrap"><table id="spreadtable"></table></div>
+                        <figcaption>Spread of each pose component across episodes (robust standard deviation = 1.4826 × median absolute deviation, so the few flipped DROID calibrations do not dominate). Position is in the attachment-site frame drawn in Fig. 2 (the robot's end-effector frame, at the flange face): z runs from the flange toward the fingertips, y is the direction the fingers open and close, x is perpendicular to both (the camera is mounted about 77 mm out along −x). Angles are the camera's own: pitch tips the view toward or away from the fingers (image up/down), yaw swings it toward one finger or the other (image left/right), roll spins the image about the viewing direction.</figcaption>
+                    </figure>
+                    <p class="claude" align="justify">
+                        DROID's poses scatter across episodes (a standard deviation of 3.7 / 3.7 / 7.6 mm) while ours cluster (1.6 / 1.1 / 1.0 mm). The rigs are nominally identical, so a tight cluster is what we should expect. However, the tightness shows consistency, not accuracy. Every fit starts from the same pose, and as discussed below, the starting pose influences where the fit ends up.
+                    </p>
+
+                    <!-- ON HOLD: ABC-130K results. Draft section, Figs. 4-5 and their script live in cloak/scratch/blog/site/index.html
+                         (media abc_*.mp4, data abc_spread.js). Restore as section 4 and renumber Limitations.
+                    <h2 class="claude mt-4 mb-3">4. ABC-130K results</h2>
+                    -->
+
+                    <!-- ON HOLD: Applications and Ablations sections (null-space figure: ../static/silhouette-calibration/null_space_draft.jpg). -->
+
+                    <h2 class="claude mt-4 mb-3">4. Limitations and release</h2>
+                    <p class="claude" align="justify">
+                        The main limitation is that a silhouette does not pin down all 6 parameters. If we perturb the starting pose by about 10 mm and 5°, the fit does not return: it ends up a median of 7 mm and 3.5° away at an IoU cost of only 0.01. The ambiguity is two dimensional. A vertical shift of the camera trades against pitch, and a sideways shift trades against yaw. At 320×180 the difference in parallax is smaller than the noise in the target, and adding frames with the gripper closed does not help. So initialization matters, which is why we start from DROID's median pose. Other limitations: we use a single shared focal length, the episode needs frames with the gripper open, and the gripper model has to match the real gripper. In our case the Robotiq coupling was misplaced by 4 mm in the XML, and every rendered silhouette was off by that much until we fixed it.
+                    </p>
+                    <p class="claude" align="justify">
+                        The calibrated extrinsics for DROID (<code>assets/droid_wrist_extrinsics.json</code>) and a script that renders the mask for one episode (<code>examples/render_extrinsics.py</code>) are in the <a href="https://github.com/Stanford-TML/cloak" target="_blank">Cloak repository</a>.
+                    </p>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../static/silhouette-calibration/spread.js"></script>
+    <script src="../static/silhouette-calibration/post.js"></script>
+    <script src="../static/js/figrefs.js"></script>
+    <script src="../static/js/disclaimer.js"></script>
+</body>
+</html>
