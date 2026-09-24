@@ -67,6 +67,7 @@ figcaption {
     color: var(--muted);
     line-height: 1.45;
     margin-top: 8px;
+    text-align: justify;
 }
 .figname {
     font-weight: 500;

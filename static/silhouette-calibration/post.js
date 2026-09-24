@@ -1,31 +1,34 @@
-const MEDIA = "../static/silhouette-calibration/";
-
-const EPISODES = [
-  { stem: "WEIRD_2023-11-07-19h-29m-35s", key: "WEIRD | 2023-11-07", mm: 36.8, deg: 2.72 },
-  { stem: "RAD_2023-09-09-07h-26m-48s", key: "RAD | 2023-09-09", mm: 31.0, deg: 2.32 },
-  { stem: "IPRL_2023-08-24-20h-35m-05s", key: "IPRL | 2023-08-24", mm: 25.2, deg: 3.49 },
-];
+const MEDIA = "../static/silhouette-calibration/showcase/";
 
 (function showcase() {
   const seg = document.getElementById("epseg");
   const video = document.getElementById("epvideo");
-  const cap = document.getElementById("epcap");
+  const info = document.getElementById("epinfo");
+  const label = ep => ep.key.split("|").join(" | ").slice(0, -12);
   function show(ep, btn) {
-    video.poster = MEDIA + ep.stem + ".jpg";
-    video.src = MEDIA + ep.stem + ".mp4";
-    document.getElementById("epext").src = MEDIA + ep.stem + "_ext.jpg";
-    cap.textContent = ep.key + ". DROID's pose and ours differ by " + ep.mm + " mm / " + ep.deg +
-      "°. Top: the two camera poses at the video's poster frame, drawn with the true field of view (frustum depth 4 cm). The labelled triad is the attachment site, the frame every distance in Fig. 3 is measured from; only the parts covering the attachment site (flange, coupling, gripper base) are see-through. Bottom: outlines rendered per frame from recorded joints and aperture.";
+    const dir = MEDIA + ep.stem + "/";
+    video.poster = dir + "poster.jpg";
+    video.src = dir + "overlay.mp4";
+    document.getElementById("epext").src = dir + "external.jpg";
+    info.textContent = label(ep) + ". DROID's pose and ours differ by " + ep.mm + " mm / " + ep.deg + "\u00b0.";
     seg.querySelectorAll("button").forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
   }
-  EPISODES.forEach((ep, i) => {
+  window.SHOWCASE.forEach((ep, i) => {
     const b = document.createElement("button");
     b.type = "button";
-    b.textContent = ep.key;
+    b.textContent = label(ep);
     b.addEventListener("click", () => show(ep, b));
     seg.appendChild(b);
     if (i === 0) show(ep, b);
   });
+  // Optional <span id="eprange"> in the prose: the min/max pose difference across the showcase episodes.
+  const range = document.getElementById("eprange");
+  if (range) {
+    const mm = window.SHOWCASE.map(ep => ep.mm);
+    const deg = window.SHOWCASE.map(ep => ep.deg);
+    range.textContent = Math.round(Math.min(...mm)) + " to " + Math.round(Math.max(...mm)) +
+      " mm and " + Math.min(...deg).toFixed(1) + " to " + Math.max(...deg).toFixed(1) + "\u00b0";
+  }
 })();
 
 function spreadChart(cfg) {
@@ -69,8 +72,6 @@ function spreadChart(cfg) {
     svg.appendChild(el("text", { class: "axis-title", x: 14, y: (M.t + H - M.b) / 2, "text-anchor": "middle",
       transform: `rotate(-90 14 ${(M.t + H - M.b) / 2})` }, R.yl));
 
-    const off = {};
-    SETS.forEach(([set]) => { off[set] = 0; });
     const medians = [];
     SETS.forEach(([set, label, color]) => {
       DATA.forEach(row => {
@@ -78,7 +79,6 @@ function spreadChart(cfg) {
         const cx = Math.min(Math.max(mm, R.x[0]), R.x[1]);
         const cy = Math.min(Math.max(deg, R.y[0]), R.y[1]);
         const isOff = cx !== mm || cy !== deg;
-        if (isOff) off[set] += 1;
         const mark = el("circle", { cx: sx(cx), cy: sy(cy), r: 4.2 });
         mark.setAttribute("class", isOff ? "mark off" : "mark");
         mark.style[isOff ? "stroke" : "fill"] = color;
@@ -100,13 +100,6 @@ function spreadChart(cfg) {
       svg.appendChild(el("circle", { class: "med", cx: sx(mm), cy: sy(deg), r: 6.5, fill: color }));
     });
     host.replaceChildren(svg, tip);
-
-    let cap = "One mark per episode (n = " + DATA.length + "). Tap a mark for the episode.";
-    const offTotal = SETS.reduce((n, [set]) => n + off[set], 0);
-    if (offTotal > 0) {
-      cap += " Hollow marks are beyond the axis range and drawn at the edge: " + SETS.map(([set, label]) => off[set] + " " + label).join(", ") + ".";
-    }
-    document.getElementById(cfg.cap).textContent = cap;
 
     const table = document.getElementById(cfg.table);
     table.innerHTML = "<thead><tr><th>spread</th><th>x mm</th><th>y mm</th><th>z mm</th><th>pitch °</th><th>yaw °</th><th>roll °</th></tr></thead>";
@@ -134,8 +127,8 @@ function spreadChart(cfg) {
 }
 
 spreadChart({
-  host: "chart", cap: "chartcap", table: "spreadtable", data: window.SPREAD, axes: window.SPREAD_AXES,
-  sets: [["droid", "DROID-provided", "#2a78d6"], ["ours", "ours", "#1baf7a"]],
+  host: "chart", table: "spreadtable", data: window.SPREAD, axes: window.SPREAD_AXES,
+  sets: [["droid", "DROID", "#2a78d6"], ["ours", "Ours", "#1baf7a"]],
   ref: { x: [60, 110], y: [86, 94], xt: [60, 70, 80, 90, 100, 110], yt: [86, 88, 90, 92, 94],
          xl: "translation from the attachment site (mm)", yl: "rotation from the site (°)" },
 });
